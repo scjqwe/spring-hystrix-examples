@@ -4,6 +4,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.netflix.hystrix.HystrixCommand;
+import com.netflix.hystrix.HystrixCommandGroupKey;
+import com.netflix.hystrix.HystrixCommandProperties;
 
 /**
  * 
@@ -18,11 +20,11 @@ public class TestHystrixCommand extends HystrixCommand<Object> {
 
 	/**
 	 * 构造方法指定配置
-	 * 
-	 * @param setter
 	 */
-	protected TestHystrixCommand(Setter setter) {
-		super(setter);
+	protected TestHystrixCommand() {
+		super(Setter.withGroupKey(HystrixCommandGroupKey.Factory.asKey("TestGroup"))
+		/* 依赖超时时间,500毫秒 */
+		.andCommandPropertiesDefaults(HystrixCommandProperties.Setter().withExecutionTimeoutInMilliseconds(500)));
 	}
 
 	/**
@@ -30,10 +32,21 @@ public class TestHystrixCommand extends HystrixCommand<Object> {
 	 */
 	@Override
 	protected Object run() throws Exception {
-		for (int i = 0; i < 1000; i++) {
-			logger.info("任务正在执行...");
+		try {
+			Thread.sleep(1000);
+		} catch (Exception e) {
+			logger.error("Exception", e);
 		}
-		return Boolean.TRUE;
+		return "run";
+	}
+
+	@Override
+	protected Object getFallback() {
+		return "fallback";
+	}
+
+	public static void main(String[] args) {
+		logger.info("{}", new TestHystrixCommand().execute());
 	}
 
 }
